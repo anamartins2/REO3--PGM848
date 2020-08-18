@@ -140,16 +140,11 @@ histR = cv2.calcHist([r], [0], None, [256], [0, 256])
 # Obtendo imagem segmentada
 img_segmentada = cv2.bitwise_and(img_rgb,img_rgb,mask=img_limiar_inv)
 
-
+import numpy as np
 # Objetos
 mascara = img_limiar_inv.copy()
 cnts,h = cv2.findContours(mascara, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-n_sementes = len(cnts)
-sementes = np.zeros((n_sementes,1))
-eixo_menor = np.zeros((n_sementes,1))
-eixo_maior = np.zeros((n_sementes,1))
-razao = np.zeros((n_sementes,1))
-area_1 = np.zeros((n_sementes,1))
+dimen = []
 #Dados grãos
 for (i, c) in enumerate(cnts):
 
@@ -162,22 +157,16 @@ for (i, c) in enumerate(cnts):
 
 	regiao = regionprops(obj) #https: // scikit - image.org / docs / dev / api / skimage.measure.html  # skimage.measure.regionprops
 	print('Semente: ', str(i+1))
-	sementes[i,0] = i+1
 	print('Dimensão da Imagem: ', np.shape(obj))
-
 	print('Medidas Físicas')
 	print('Centroide: ', regiao[0].centroid)
 	print('Comprimento do eixo menor: ', regiao[0].minor_axis_length)
-	eixo_menor[i,0] = regiao[0].minor_axis_length
 	print('Comprimento do eixo maior: ', regiao[0].major_axis_length)
-	eixo_maior[i,0] = regiao[0].major_axis_length
 	print('Razão: ', regiao[0].major_axis_length / regiao[0].minor_axis_length)
-	razao[i,0] = regiao[0].major_axis_length / regiao[0].minor_axis_length
 	area = cv2.contourArea(c)
 	print('Área: ', area)
 	print('Perímetro: ', cv2.arcLength(c,True))
 	perimetro = cv2.arcLength(c,True)
-	area_1 [i,0] = area
 	print('Medidas de Cor')
 	min_val_r, max_val_r, min_loc_r, max_loc_r = cv2.minMaxLoc(obj_rgb[:,:,0], mask=obj)
 	print('Valor Mínimo no R: ', min_val_r, ' - Posição: ', min_loc_r)
@@ -197,11 +186,15 @@ for (i, c) in enumerate(cnts):
 	med_val_b = cv2.mean(obj_rgb[:,:,2], mask=obj)
 	print('Média no Azul: ', med_val_b)
 	print('-'*50)
+	import pandas as pd
+	razao = regiao[0].major_axis_length / regiao[0].minor_axis_length
+	dimen += [[str(i + 1), str(h), str(w), str(area), str(razao)]]
+	dados = pd.DataFrame(dimen)
+	dados = dados.rename(columns={0: 'Grãos', 1: 'Altura', 2: 'Largura', 3: 'Area', 4: 'Razão'})
+	dados.to_csv('Medidas.csv', index=False)
 
 print('-'*50)
 
-seg = img_segmentada.copy()
-cv2.drawContours(seg,cnts,-1,(0,255,0),2)
 
 # Apresentando as imagens
 seg = img_segmentada.copy()
